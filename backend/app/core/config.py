@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # Security
-    SECRET_KEY: str = "safecase-super-secure-production-ready-jwt-key-2026-x93jf938h"
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "local-development-only-change-before-deploy")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 1 day for dev/demo, configurable
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ALGORITHM: str = "HS256"
@@ -20,7 +20,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{BASE_DIR}/safecase.db")
     
     # Uploads Storage
-    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", str(BASE_DIR / "uploads"))
+    UPLOAD_DIR: str = os.getenv(
+        "UPLOAD_DIR",
+        "/tmp/safecase-uploads" if os.getenv("VERCEL") else str(BASE_DIR / "uploads")
+    )
     MAX_UPLOAD_SIZE_MB: int = 15
     ALLOWED_EXTENSIONS: List[str] = ["png", "jpg", "jpeg", "pdf"]
     
@@ -46,6 +49,14 @@ class Settings(BaseSettings):
         extra = "allow"
 
 settings = Settings()
+
+if os.getenv("VERCEL"):
+    if not os.getenv("SECRET_KEY"):
+        raise RuntimeError("Set SECRET_KEY in the Vercel backend project environment.")
+    if not os.getenv("DATABASE_URL", "").startswith("postgresql+asyncpg://"):
+        raise RuntimeError(
+            "Set DATABASE_URL to a persistent PostgreSQL URL using postgresql+asyncpg://."
+        )
 
 # Ensure uploads directory exists
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)

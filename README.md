@@ -182,7 +182,43 @@ The application will be accessible at:
 
 ---
 
-## 6. Pre-configured Demo Accounts
+## 6. Deploying to Vercel
+
+Deploy the frontend and backend as **two Vercel projects** from this repository:
+
+1. Import the repository in Vercel and set the project **Root Directory** to `frontend`.
+   Vercel uses `frontend/vercel.json`; the build command is `npm run build` and the
+   output directory is `dist`.
+2. Create a second Vercel project for the same repository with **Root Directory**
+   set to `backend`. Vercel uses the FastAPI entry point at `backend/api/index.py`
+   and `backend/requirements.txt`.
+3. Configure the backend project's environment variables:
+   - `DATABASE_URL`: a persistent PostgreSQL connection string using the
+     `postgresql+asyncpg://` SQLAlchemy driver.
+   - `SECRET_KEY`: a unique, randomly generated secret (for example,
+     `python -c "import secrets; print(secrets.token_urlsafe(48))"`).
+   - `CORS_ORIGINS`: a JSON array containing the deployed frontend origin, such as
+     `["https://your-frontend.vercel.app"]`.
+   - `UPLOAD_DIR`: `/tmp/safecase-uploads` (the default on Vercel).
+4. Set `VITE_API_URL` in the frontend project's environment variables to the
+   backend project's origin, for example `https://your-backend.vercel.app`.
+   Redeploy the frontend after setting it.
+5. Deploy the backend first, then the frontend. Verify
+   `https://your-backend.vercel.app/api/health` and open the frontend deployment.
+
+Use the PostgreSQL URL from your database provider, but ensure its scheme is
+`postgresql+asyncpg://` rather than `postgres://` or `postgresql://`.
+
+**Important storage limitation:** Vercel's function filesystem is temporary.
+`/tmp/safecase-uploads` lets the API start and accept evidence, but those files
+are not durable and may disappear between invocations. Do not use this setup for
+real evidence until `backend/app/services/storage.py` is connected to persistent
+object storage. Vercel also limits request body size, so the app's default 15 MB
+evidence upload limit may exceed the function request limit.
+
+---
+
+## 7. Pre-configured Demo Accounts
 
 The database seed command (`python scripts/seed.py`) configures 3 distinct accounts:
 
@@ -196,7 +232,7 @@ The database seed command (`python scripts/seed.py`) configures 3 distinct accou
 
 ---
 
-## 7. Running Automated Tests
+## 8. Running Automated Tests
 
 Run the full test suite verifying authentication, role boundaries, status transitions, evidence upload validation, and analytics calculations:
 
@@ -215,7 +251,7 @@ All 6 test suites execute with in-memory SQLite isolation:
 
 ---
 
-## 8. API Documentation
+## 9. API Documentation
 
 Interactive OpenAPI / Swagger documentation is available out of the box:
 - **Swagger UI:** `http://localhost:8000/docs`
